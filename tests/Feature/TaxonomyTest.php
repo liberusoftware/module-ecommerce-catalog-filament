@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Liberu\Ecommerce\Catalog\Events\BrandCreated;
 use Liberu\Ecommerce\Catalog\Events\CategoryCreated;
@@ -8,14 +10,20 @@ use Liberu\Ecommerce\Catalog\Events\CollectionCreated;
 use Liberu\Ecommerce\Catalog\Events\VendorCreated;
 use Liberu\Ecommerce\Catalog\Filament\Resources\BrandResource;
 use Liberu\Ecommerce\Catalog\Filament\Resources\BrandResource\Pages\CreateBrand;
+use Liberu\Ecommerce\Catalog\Filament\Resources\BrandResource\Pages\EditBrand;
+use Liberu\Ecommerce\Catalog\Filament\Resources\BrandResource\Pages\ListBrands;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CategoryResource;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CategoryResource\Pages\CreateCategory;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CategoryResource\Pages\EditCategory;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CategoryResource\Pages\ListCategories;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CollectionResource;
 use Liberu\Ecommerce\Catalog\Filament\Resources\CollectionResource\Pages\CreateCollection;
+use Liberu\Ecommerce\Catalog\Filament\Resources\CollectionResource\Pages\EditCollection;
+use Liberu\Ecommerce\Catalog\Filament\Resources\CollectionResource\Pages\ListCollections;
 use Liberu\Ecommerce\Catalog\Filament\Resources\VendorResource;
 use Liberu\Ecommerce\Catalog\Filament\Resources\VendorResource\Pages\CreateVendor;
+use Liberu\Ecommerce\Catalog\Filament\Resources\VendorResource\Pages\EditVendor;
+use Liberu\Ecommerce\Catalog\Filament\Resources\VendorResource\Pages\ListVendors;
 use Liberu\Ecommerce\Catalog\Models\Brand;
 use Liberu\Ecommerce\Catalog\Models\Category;
 use Liberu\Ecommerce\Catalog\Models\ProductCollection;
@@ -228,4 +236,86 @@ it('shows no taxonomy at all to an actor working in no team', function () {
         ->and(CollectionResource::getEloquentQuery()->count())->toBe(0)
         ->and(BrandResource::getEloquentQuery()->count())->toBe(0)
         ->and(VendorResource::getEloquentQuery()->count())->toBe(0);
+});
+
+/**
+ * The three thin resources are thin, not absent. Each has a list and an edit
+ * page nothing else in this suite mounts, and a resource whose table or form
+ * throws on render is a resource that looks fine until somebody clicks it.
+ */
+it('lists and edits a collection', function () {
+    $this->actorForTeam(7);
+
+    $collection = ProductCollection::factory()->ownedBy(7)->create(['name' => 'Summer Sale']);
+
+    Livewire::test(ListCollections::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$collection]);
+
+    Livewire::test(EditCollection::class, ['record' => $collection->getRouteKey()])
+        ->assertFormFieldDoesNotExist('slug')
+        ->fillForm(['name' => 'Autumn Sale', 'description' => 'Ends in November.'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    // Saved through Filament's default, because the domain publishes no
+    // `UpdateCollection` to delegate to — and the slug stays where it was,
+    // because it is addressable.
+    expect($collection->refresh()->name)->toBe('Autumn Sale')
+        ->and($collection->description)->toBe('Ends in November.')
+        ->and($collection->slug)->toBe('summer-sale');
+});
+
+it('lists and edits a brand', function () {
+    $this->actorForTeam(7);
+
+    $brand = Brand::factory()->ownedBy(7)->create(['name' => 'Barbour']);
+
+    Livewire::test(ListBrands::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$brand]);
+
+    Livewire::test(EditBrand::class, ['record' => $brand->getRouteKey()])
+        ->assertFormFieldDoesNotExist('slug')
+        ->fillForm(['name' => 'Barbour International', 'website' => 'https://example.test'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($brand->refresh()->name)->toBe('Barbour International')
+        ->and($brand->website)->toBe('https://example.test');
+});
+
+it('lists and edits a vendor', function () {
+    $this->actorForTeam(7);
+
+    $vendor = Vendor::factory()->ownedBy(7)->create(['name' => 'Northern Supply']);
+
+    Livewire::test(ListVendors::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$vendor]);
+
+    Livewire::test(EditVendor::class, ['record' => $vendor->getRouteKey()])
+        ->assertFormFieldDoesNotExist('slug')
+        ->fillForm(['name' => 'Northern Supply Co', 'contact_phone' => '01234 567890'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($vendor->refresh()->name)->toBe('Northern Supply Co')
+        ->and($vendor->contact_phone)->toBe('01234 567890');
+});
+
+it('refuses another team\'s brand, collection and vendor by the same route key', function () {
+    $this->actorForTeam(7);
+
+    $theirs = Brand::factory()->ownedBy(9)->create();
+
+    $refusal = null;
+
+    try {
+        Livewire::test(EditBrand::class, ['record' => $theirs->getRouteKey()]);
+    } catch (ModelNotFoundException|AuthorizationException $exception) {
+        $refusal = $exception;
+    }
+
+    expect($refusal)->not->toBeNull();
 });
