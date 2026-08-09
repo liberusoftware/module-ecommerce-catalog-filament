@@ -1,0 +1,44 @@
+{
+    "$schema": "https://schemas.liberu.dev/module/v1.json",
+    "name": "ecommerce-catalog-filament",
+    "display_name": "Catalog Administration",
+    "description": "Optional Filament administration for the Catalog domain module: products and their variants, options, tags, collections and channel publication, plus categories, brands and vendors.",
+    "version": "0.1.0",
+    "category": "presentation",
+    "provider": "Liberu\\Ecommerce\\Catalog\\Filament\\CatalogFilamentServiceProvider",
+    "requires": {
+        "php": "^8.5",
+        "laravel": "^13.0",
+        "packages": {
+            "liberusoftware/module-manager": "^1.4",
+            "liberusoftware/ecommerce-catalog": "^0.1"
+        }
+    },
+    "presentation": {
+        "filament": {
+            "admin": [
+                "Liberu\\Ecommerce\\Catalog\\Filament\\CatalogPlugin"
+            ]
+        }
+    },
+    "capabilities": [
+        "ecommerce.catalog.filament"
+    ],
+    "default_enabled": false,
+    "features": [
+        "Products",
+        "Reachability",
+        "Variants",
+        "Product options",
+        "Tags",
+        "Collections",
+        "Channel publication",
+        "Categories",
+        "Brands",
+        "Vendors",
+        "Lifecycle transitions",
+        "Visibility",
+        "Effective dates",
+        "Domain events"
+    ]
+}
