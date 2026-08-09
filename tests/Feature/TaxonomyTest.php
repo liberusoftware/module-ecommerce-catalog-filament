@@ -247,6 +247,7 @@ it('lists and edits a collection', function () {
     $this->actorForTeam(7);
 
     $collection = ProductCollection::factory()->ownedBy(7)->create(['name' => 'Summer Sale']);
+    $slug = $collection->slug;
 
     Livewire::test(ListCollections::class)
         ->assertOk()
@@ -259,11 +260,11 @@ it('lists and edits a collection', function () {
         ->assertHasNoFormErrors();
 
     // Saved through Filament's default, because the domain publishes no
-    // `UpdateCollection` to delegate to — and the slug stays where it was,
-    // because it is addressable.
+    // `UpdateCollection` to delegate to — and the slug stays exactly where it
+    // was, because it is addressable and renaming is not re-slugging.
     expect($collection->refresh()->name)->toBe('Autumn Sale')
         ->and($collection->description)->toBe('Ends in November.')
-        ->and($collection->slug)->toBe('summer-sale');
+        ->and($collection->slug)->toBe($slug);
 });
 
 it('lists and edits a brand', function () {
