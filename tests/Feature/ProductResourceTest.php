@@ -85,7 +85,7 @@ it('keeps the three facts and the slug out of the form entirely', function () {
     // Not merely ignored on save — absent. A disabled field is still a field a
     // crafted request can set, and a present-but-dropped one is a control that
     // lies about what it does.
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->assertFormFieldExists('name')
         ->assertFormFieldDoesNotExist('status')
         ->assertFormFieldDoesNotExist('visibility')
@@ -102,7 +102,7 @@ it('saves the descriptive fields and leaves the three facts where they were', fu
 
     $product = Product::factory()->ownedBy(7)->unlisted()->create(['name' => 'Old Name']);
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->fillForm(['name' => 'New Name'])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -117,7 +117,7 @@ it('offers exactly the transitions the enum admits', function () {
 
     $product = Product::factory()->ownedBy(7)->draft()->create();
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->mountAction('changeStatus')
         ->assertMountedActionModalSee('Active')
         ->assertMountedActionModalSee('Archived')
@@ -133,7 +133,7 @@ it('moves a product along the lifecycle through the domain action', function () 
 
     Event::fake([ProductStatusChanged::class]);
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('changeStatus', ['status' => ProductStatus::Active->value]);
 
     expect($product->refresh()->status)->toBe(ProductStatus::Active);
@@ -153,7 +153,7 @@ it('refuses an illegal transition without failing the request', function () {
     // stopped by the select's own validation or by the domain exception the
     // action catches, what must not happen is a 500 — and reaching the
     // assertions at all is what proves it did not.
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('changeStatus', ['status' => ProductStatus::Discontinued->value]);
 
     expect($product->refresh()->status)->toBe(ProductStatus::Draft);
@@ -180,7 +180,7 @@ it('changes visibility through the domain action, and does not offer the state i
 
     Event::fake([ProductVisibilityChanged::class]);
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->mountAction('setVisibility')
         ->assertMountedActionModalSee('Unlisted')
         ->assertMountedActionModalSee('Hidden')
@@ -201,7 +201,7 @@ it('schedules an availability window through the domain action', function () {
 
     Event::fake([ProductAvailabilityScheduled::class]);
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('scheduleAvailability', [
             'available_from' => '2026-07-01 00:00:00',
             'available_until' => '2026-08-01 00:00:00',
@@ -218,7 +218,7 @@ it('clears a window with the same action that set it', function () {
 
     $product = Product::factory()->ownedBy(7)->available('2026-07-01 00:00:00', '2026-08-01 00:00:00')->create();
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('scheduleAvailability', [
             'available_from' => null,
             'available_until' => null,
@@ -236,7 +236,7 @@ it('refuses a window that closes before it opens, without failing the request', 
 
     $product = Product::factory()->ownedBy(7)->create();
 
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('scheduleAvailability', [
             'available_from' => '2026-08-01 00:00:00',
             'available_until' => '2026-07-01 00:00:00',
@@ -267,7 +267,7 @@ it('will not open another team\'s product', function () {
     $refusal = null;
 
     try {
-        Livewire::test(EditProduct::class, ['record' => $theirs->getKey()]);
+        Livewire::test(EditProduct::class, ['record' => $theirs->getRouteKey()]);
     } catch (ModelNotFoundException|AuthorizationException $exception) {
         // Either answer is correct. The scope keeps it out of the resource's
         // query, and the policy refuses it if anything ever hands it over

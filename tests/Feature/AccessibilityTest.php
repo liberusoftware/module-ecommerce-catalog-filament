@@ -134,7 +134,7 @@ it('states the whole answer on the page that edits it', function () {
 
     // Three header actions and three columns still leave an operator working
     // out what they add up to. The subheading says it.
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->assertOk()
         ->assertSee('No shopper can see this product')
         ->assertSee('published on no channel');

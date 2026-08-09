@@ -106,7 +106,7 @@ it('will not move a product to a status the transition table forbids', function 
     // Active to draft is absent from the enum entirely: a product that has been
     // offered has been seen and linked, and un-finishing it is how a live URL
     // starts 404ing. Submitting it anyway must change nothing and must not 500.
-    Livewire::test(EditProduct::class, ['record' => $product->getKey()])
+    Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
         ->callAction('changeStatus', ['status' => ProductStatus::Draft->value]);
 
     expect($product->refresh()->status)->toBe(ProductStatus::Active);

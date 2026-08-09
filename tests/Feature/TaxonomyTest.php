@@ -73,7 +73,7 @@ it('offers the descriptive fields once the category exists, and never the parent
 
     $category = Category::factory()->ownedBy(7)->create();
 
-    Livewire::test(EditCategory::class, ['record' => $category->getKey()])
+    Livewire::test(EditCategory::class, ['record' => $category->getRouteKey()])
         ->assertFormFieldExists('description')
         // Moving a node is not an attribute change — it is `MoveCategory`, which
         // is the only thing that refuses a cycle.
@@ -89,7 +89,7 @@ it('re-parents a category through the domain action', function () {
 
     Event::fake([CategoryMoved::class]);
 
-    Livewire::test(EditCategory::class, ['record' => $parkas->getKey()])
+    Livewire::test(EditCategory::class, ['record' => $parkas->getRouteKey()])
         ->callAction('move', ['parent_category_id' => $outerwear->id]);
 
     expect($parkas->refresh()->parent_category_id)->toBe($outerwear->id);
@@ -103,7 +103,7 @@ it('promotes a category to a root by leaving the parent empty', function () {
     $outerwear = Category::factory()->ownedBy(7)->create();
     $parkas = Category::factory()->ownedBy(7)->under($outerwear)->create();
 
-    Livewire::test(EditCategory::class, ['record' => $parkas->getKey()])
+    Livewire::test(EditCategory::class, ['record' => $parkas->getRouteKey()])
         ->callAction('move', ['parent_category_id' => null]);
 
     expect($parkas->refresh()->parent_category_id)->toBeNull();
@@ -120,7 +120,7 @@ it('will not move a category under its own descendant', function () {
     // another way. Either way a cycle leaves a ring with no root and every
     // breadcrumb walk stops terminating, so what matters is that it did not
     // happen — and that the request did not 500 proving it.
-    Livewire::test(EditCategory::class, ['record' => $outerwear->getKey()])
+    Livewire::test(EditCategory::class, ['record' => $outerwear->getRouteKey()])
         ->callAction('move', ['parent_category_id' => $parkas->id]);
 
     expect($outerwear->refresh()->parent_category_id)->toBeNull();
